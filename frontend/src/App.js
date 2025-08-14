@@ -1,33 +1,39 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import './App.css'; 
+import { useState, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import authService from "./services/authService";
+import { login, logout } from "./store/AuthSlice";
+import { Footer, Header } from './components';
+import { Outlet } from 'react-router-dom';
 
 function App() {
-  const [tasks, setTasks] = useState([]);
-  const [title, setTitle] = useState("");
 
-  useEffect(() => {
-    axios.get("http://127.0.0.1:8000/api/tasks/")
-      .then(res => setTasks(res.data));
-  }, []);
+  const dispatch = useDispatch();
+  const [loading, setLoading] = useState(true);
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    axios.post("http://127.0.0.1:8000/api/add/", { title, completed: false })
-      .then(res => setTasks([...tasks, res.data]));
-  }
+    useEffect(() => {
+      authService.getCurrentUser()
+        .then((userData) => {
+          if (userData) {
+            dispatch(login({ userData }));
+          } else {
+            dispatch(logout());
+          }
+        })
+        .finally(() => setLoading(false));
+    }, [dispatch]);
 
-  return (
-    <div>
-      <h1>Todo List</h1>
-      <form onSubmit={handleSubmit}>
-        <input value={title} onChange={e => setTitle(e.target.value)} />
-        <button type="submit">Add</button>
-      </form>
-      {tasks.map(task => (
-        <div key={task.id}>{task.title}</div>
-      ))}
+  return !loading ? (
+    <div className="app-container">
+      <div className="content-wrapper">
+        <Header/>
+        <main className="main-content">
+          <Outlet />
+        </main>
+        <Footer/>
+      </div>
     </div>
-  );
+  ) : null;
 }
 
 export default App;
